@@ -1,0 +1,25 @@
+no multiprocessing
+
+
+
+.ipynb
+%run isot_preprocessor
+create isot preprocessor object
+object.create_labels()
+object.count_flow_types()
+
+
+
+
+.py
+class
+	- create labels for the malicious IP's
+		- for each line, 
+			- evaluate ip address 
+			- array of malicious ip addresses
+			- if row.ipaddress is in malicious_ips:
+				- row.label = Botnet
+			- else:
+				- Normal/Background
+	- count number of flows once they're labelled and cross reference number of 
+		labels to isot-dataset.pdf numbers
