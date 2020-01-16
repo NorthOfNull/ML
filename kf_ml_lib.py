@@ -73,7 +73,7 @@ def split_dataset(dataset, extended):
 
     
 # Counts normal and botnet flows from the labels within a given dataset
-def get_flows(dataset):
+def get_flow_counts(dataset):
     normal_flows = 0
     botnet_flows = 0
     
@@ -82,9 +82,6 @@ def get_flows(dataset):
             normal_flows += 1
         if dataset.at[row, 'Label'] == "Botnet":
             botnet_flows += 1
-
-    print('Normal flows = ', normal_flows)
-    print('Botnet flows = ', botnet_flows)
     
     return normal_flows, botnet_flows
 
