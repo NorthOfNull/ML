@@ -9,6 +9,7 @@ from sklearn.model_selection import cross_validate
 
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.neighbors import KNeighborsClassifier
 
 
 # Genetic Algorithm Class for hyperparamter optimisation
@@ -40,15 +41,21 @@ class kf_genetic_algorithm:
             self.splits = ['best', 'random']
             self.min_samples_splits = dict(low = 2, high = 5)
             self.min_samples_leafs = dict(low = 1, high = 4)
-            self.min_weight_fraction_leafs = dict(low = 0.0, high = 0.5)
+            self.min_weight_fraction_leafs = dict(low = 0.0, high = 0.1)
             self.class_weights = ['balanced', None]
         elif self.classifier == 'RandomForestClassifier':
             self.n_estimators = dict(low = 10, high = 200)
             self.criterions = ['gini', 'entropy']
             self.min_samples_splits = dict(low = 2, high = 5)
             self.min_samples_leafs = dict(low = 1, high = 4)
-            self.min_weight_fraction_leafs = dict(low = 0.0, high = 0.5)
+            self.min_weight_fraction_leafs = dict(low = 0.0, high = 0.1)
             self.class_weights = ['balanced', None]
+        elif self.classifier == 'KNeighborsClassifier':
+            self.n_neighbors = dict(low = 1, high = 10)
+            self.weights = ['uniform', 'distance']
+            self.algorithm = ['ball_tree', 'kd_tree']
+            self.leaf_size = dict(low = 1, high = 50)
+            self.p = dict(low = 1, high = 5)
         else:
             raise Exception("Classifier not supported: ", self.classifier)
                 
@@ -68,8 +75,9 @@ class kf_genetic_algorithm:
         
         if self.evaluation_method == 'single_fit_eval':
             self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(self.X, self.y, train_size=0.7, stratify=self.y)
+            del self.dataset
         elif self.evaluation_method == 'cv':
-            print("")
+            del self.dataset
             #print("\nEvaluation Method = Cross Validation\nThis may take a while...")
         else:
             raise Exception("Evalutaion Method not supported:", self.evaluation_method)
@@ -106,6 +114,12 @@ class kf_genetic_algorithm:
                 chromosome.append(1)
                 chromosome.append(1)
                 chromosome.append(None)
+            elif self.classifier == 'KNeighborsClassifier':
+                chromosome.append(5)
+                chromosome.append('uniform')
+                chromosome.append('kd_tree')
+                chromosome.append(30)
+                chromosome.append(2)
         
             population.append(chromosome)
         
@@ -113,25 +127,9 @@ class kf_genetic_algorithm:
         # Fill each chromosome with randomly selected genes from the classifier's gene pools 
         # and add it to the population
         for i in range(start, self.population_size):
-            chromosome = []
+            chromosome = self.generate_random_chromosome()
             
-            if self.classifier == 'DecisionTreeClassifier':
-                chromosome.append(random.choice(self.criterions))
-                chromosome.append(random.choice(self.splits))
-                chromosome.append(random.randrange(self.min_samples_splits['low'], self.min_samples_splits['high']))
-                chromosome.append(random.randrange(self.min_samples_leafs['low'], self.min_samples_leafs['high']))
-                chromosome.append(random.uniform(self.min_weight_fraction_leafs['low'], self.min_weight_fraction_leafs['high']))   
-                chromosome.append(random.choice(self.class_weights))
-            elif self.classifier == 'RandomForestClassifier':
-                chromosome.append(random.randrange(self.n_estimators['low'], self.n_estimators['high']))
-                chromosome.append(random.choice(self.criterions))
-                chromosome.append(random.randrange(self.min_samples_splits['low'], self.min_samples_splits['high']))
-                chromosome.append(random.randrange(self.min_samples_leafs['low'], self.min_samples_leafs['high']))
-                chromosome.append(random.uniform(self.min_weight_fraction_leafs['low'], self.min_weight_fraction_leafs['high']))   
-                chromosome.append(random.choice(self.class_weights))
-                               
             population.append(chromosome)
-        
         
         #print("Generated Inital Population:")
         #print(population)
@@ -173,11 +171,13 @@ class kf_genetic_algorithm:
             #    print(chromosome)
             
             # Mutate the population
-            self.mutate_population()
+            if generation != self.generation:
+                self.mutate_population()
             
             #print("\nNew Population:")
             #for chromosome in self.population:
             #     print(chromosome)
+        
         
         sorted_best_results = sorted(zip(self.best_generation_fitness_scores, self.best_generation_chromosomes), key=lambda x: x[0], reverse=True)
         
@@ -205,7 +205,16 @@ class kf_genetic_algorithm:
                                              min_samples_leaf=chromosome[3],
                                              min_weight_fraction_leaf=chromosome[4],
                                              class_weight=chromosome[5])
+            elif self.classifier == 'KNeighborsClassifier':
+                clf = KNeighborsClassifier(n_jobs=8,
+                                           n_neighbors=chromosome[0],
+                                           weights=chromosome[1],
+                                           algorithm=chromosome[2],
+                                           leaf_size=chromosome[3],
+                                           p=chromosome[4])
 
+                
+            # Evaluate fitness, depending on the evaluation method requested
             if self.evaluation_method == 'single_fit_eval':
                 clf = clf.fit(self.X_train, self.y_train)
             
@@ -223,7 +232,7 @@ class kf_genetic_algorithm:
             elif self.evaluation_method == 'cv':
                 scoring = ['precision_macro', 'recall_macro']
                 
-                results = cross_validate(clf, self.X, self.y, cv=10, scoring=scoring, n_jobs=8, verbose=0)
+                results = cross_validate(clf, self.X, self.y, cv=10, scoring=scoring, n_jobs=-1, verbose=0)
 
                 fit_time = np.mean(results['fit_time'])
                 precision = np.mean(results['test_precision_macro'])
@@ -232,7 +241,6 @@ class kf_genetic_algorithm:
                 f1_score = kf.calc_f1_score(precision, recall)
 
             fitness_scores.append(f1_score)
-    
     
         return fitness_scores
     
@@ -269,6 +277,9 @@ class kf_genetic_algorithm:
         if self.classifier == 'DecisionTreeClassifier' or self.classifier == 'RandomForestClassifier':
             offspring1 = [parent1[0], parent1[1], parent1[2], parent2[3], parent2[4], parent2[5]]
             offspring2 = [parent2[0], parent2[1], parent2[2], parent1[3], parent1[4], parent1[5]]
+        if self.classifier == 'KNeighborsClassifier':
+            offspring1 = [parent1[0], parent1[1], parent1[2], parent2[3], parent2[4]]
+            offspring2 = [parent2[0], parent2[1], parent2[2], parent1[3], parent1[4]]
         
         #print("Offspring1 = ", offspring1)
         #print("Offspring2 = ", offspring2)
@@ -294,6 +305,12 @@ class kf_genetic_algorithm:
             chromosome.append(random.randrange(self.min_samples_leafs['low'], self.min_samples_leafs['high']))
             chromosome.append(random.uniform(self.min_weight_fraction_leafs['low'], self.min_weight_fraction_leafs['high']))   
             chromosome.append(random.choice(self.class_weights))
+        elif self.classifier == 'KNeighborsClassifier':
+            chromosome.append(random.randrange(self.n_neighbors['low'], self.n_neighbors['high']))
+            chromosome.append(random.choice(self.weights))
+            chromosome.append(random.choice(self.algorithm))
+            chromosome.append(random.randrange(self.leaf_size['low'], self.leaf_size['high']))
+            chromosome.append(random.randrange(self.p['low'], self.p['high']))
             
         #print("RANDOMLY GENERATED CHROMOSOME:")
         #print(chromosome)
@@ -351,8 +368,25 @@ class kf_genetic_algorithm:
                         chromosome[5] = None
                     else:
                         chromosome[5] = 'balanced'    
-    
-    
+
+            elif self.classifier == 'KNeighborsClassifier':
+                if gene == 0:
+                    chromosome[0] = random.randrange(self.n_neighbors['low'], self.n_neighbors['high'])
+                elif gene == 1:
+                    if chromosome[1] == 'uniform':
+                        chromosome[1] = 'distance'
+                    else:
+                        chromosome[1] = 'uniform'
+                elif gene == 2:
+                    if chromosome[2] == 'ball_tree':
+                        chromosome[2] = 'kd_tree'
+                    else:
+                        chromosome[2] = 'ball_tree'                                        
+                elif gene == 3:
+                    chromosome[3] = random.randrange(self.leaf_size['low'], self.leaf_size['high'])
+                elif gene == 4:
+                    chromosome[4] = random.randrange(self.p['low'], self.p['high'])
+
     # Plot each generation's best fitness score
     def plot_fitness_scores(self):
         fig = plt.figure()
