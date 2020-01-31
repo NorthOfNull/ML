@@ -9,7 +9,7 @@ rank = comm.Get_rank()
 print("Running on node ", rank)
 
 # DECISION TREE CLASSIFIER GA RESULTS
-# Genetic Algorithm using 10 generations with a population size of 10 for each dataset
+# Genetic Algorithm using 20 generations with a population size of 20 for each dataset
 # Each chromosome is evaluated with Stratified 10-fold Cross Validation and 
 # uses Heuristic Inital Population Generation
 best_dataset_chromosomes = []
