@@ -17,7 +17,7 @@ best_dataset_chromosomes = []
 dataset_path = kf.dataset_path_list[rank]
 
 ga = kf_bio.kf_genetic_algorithm(classifier='DecisionTreeClassifier', dataset_path=dataset_path,
-                        population_size=10, generations=10, evaluation_method='cv', initial_pop_gen_method='heuristic',
+                        population_size=20, generations=20, evaluation_method='cv', initial_pop_gen_method='heuristic',
                         extended_dataset=False)
 
 sorted_score_chromosome_list = ga.run()
