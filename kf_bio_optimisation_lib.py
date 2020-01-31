@@ -112,7 +112,7 @@ class kf_genetic_algorithm:
                 chromosome.append('gini')
                 chromosome.append(2)
                 chromosome.append(1)
-                chromosome.append(1)
+                chromosome.append(0.0)
                 chromosome.append(None)
             elif self.classifier == 'KNeighborsClassifier':
                 chromosome.append(5)
