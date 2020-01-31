@@ -3,7 +3,12 @@ import numpy as np
 
 from sklearn.model_selection import cross_validate
 
+from sklearn.naive_bayes import GaussianNB
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import AdaBoostClassifier
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.svm import LinearSVC
 
 # MPI Node
 from mpi4py import MPI
@@ -14,7 +19,13 @@ print("Running on node ", rank)
 scoring = ['precision_macro', 'recall_macro']
 
 # Array of Classifiers under test
-classifiers = [KNeighborsClassifier()]
+classifiers = [GaussianNB(),
+               DecisionTreeClassifier(),
+               RandomForestClassifier(),
+               AdaBoostClassifier(),
+               KNeighborsClassifier(),
+               LinearSVC()
+              ]
 
 # Dataset to load
 # Dataset_path_list is indexed by the node number that it is running on
@@ -37,6 +48,7 @@ for classifier in classifiers:
     f1_score = kf.calc_f1_score(precision, recall)
 
     print(dataset_path)
+    print(classifier)
     print("Fit Time = ", fit_time)
     print("Precision = ", precision)
     print("Recall = ", recall)
