@@ -171,8 +171,7 @@ class kf_genetic_algorithm:
             #    print(chromosome)
             
             # Mutate the population
-            if generation != self.generation:
-                self.mutate_population()
+            self.mutate_population()
             
             #print("\nNew Population:")
             #for chromosome in self.population:
@@ -238,7 +237,10 @@ class kf_genetic_algorithm:
                 precision = np.mean(results['test_precision_macro'])
                 recall = np.mean(results['test_recall_macro'])
                 
-                f1_score = kf.calc_f1_score(precision, recall)
+                if precision == 0:
+                    f1_score = 0
+                else:
+                    f1_score = kf.calc_f1_score(precision, recall)
 
             fitness_scores.append(f1_score)
     
