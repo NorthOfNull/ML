@@ -29,18 +29,18 @@ classifiers = [GaussianNB(),
 
 # Dataset to load
 # Dataset_path_list is indexed by the node number that it is running on
-dataset_path = kf.dataset_path_list[rank]
+dataset_path = kf.extended_dataset_path_list[rank]
 
 
 # Load and Split Dataset
 dataset = kf.load_dataset(dataset_path)
-X, y = kf.split_dataset(dataset, extended=False)
+X, y = kf.split_dataset(dataset, extended=True)
 del dataset
 
 # Cross Validating each classifier on the given dataset
 for classifier in classifiers:
     # Cross Validate the classifer on the full dataset
-    results = cross_validate(classifier, X, y, cv=10, scoring=scoring, n_jobs=-1, verbose=0)
+    results = cross_validate(classifier, X, y, cv=10, scoring=scoring, n_jobs=10, verbose=0)
 
     fit_time = np.mean(results['fit_time'])
     precision = np.mean(results['test_precision_macro'])

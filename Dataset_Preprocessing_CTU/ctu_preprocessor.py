@@ -32,10 +32,11 @@ class ctu_preprocessor:
 
         try:
             # Read in .csv file data from the defined path
-            raw_dataset = pd.read_csv(self.path)
-            
-            # Put data into Pandas DataFrame
-            self.dataset = pd.DataFrame(raw_dataset)
+            self.dataset = pd.read_csv(self.path, low_memory=False)
+
+            # EXPERIMENTAL
+            self.dataset['Sport'].astype('int64')
+            self.dataset['Dport'].astype('int64')
 
         except:
             print("File Read Error")
@@ -67,8 +68,8 @@ class ctu_preprocessor:
                 self.dataset.at[row, 'Dport'] = dest_port
             
             # Convert all strings, even if hex, to ints
-            self.dataset.at[row, 'Sport'] = int(str(src_port), 0)
-            self.dataset.at[row, 'Dport'] = int(str(dest_port), 0)
+            self.dataset.at[row, 'Sport'] = int(src_port, 0)
+            self.dataset.at[row, 'Dport'] = int(dest_port, 0)
             
             
             # [2/3]

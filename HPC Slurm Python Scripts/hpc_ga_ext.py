@@ -1,3 +1,10 @@
+# Warning suppresion
+def warn(*args, **kwargs):
+    pass
+import warnings
+warnings.warn = warn
+
+
 import kf_ml_lib as kf
 import kf_bio_optimisation_lib as kf_bio
 
@@ -9,16 +16,16 @@ rank = comm.Get_rank()
 print("Running on node ", rank)
 
 # DECISION TREE CLASSIFIER GA RESULTS
-# Genetic Algorithm using 20 generations with a population size of 20 for each dataset
+# Genetic Algorithm using 10 generations with a population size of 10 for each dataset
 # Each chromosome is evaluated with Stratified 10-fold Cross Validation and 
 # uses Heuristic Inital Population Generation
 best_dataset_chromosomes = []
 
-dataset_path = kf.dataset_path_list[rank]
+dataset_path = kf.extended_dataset_path_list[rank]
 
 ga = kf_bio.kf_genetic_algorithm(classifier='DecisionTreeClassifier', dataset_path=dataset_path,
-                        population_size=20, generations=20, evaluation_method='cv', initial_pop_gen_method='heuristic',
-                        extended_dataset=False)
+                        population_size=10, generations=10, evaluation_method='cv', initial_pop_gen_method='heuristic',
+                        extended_dataset=True)
 
 sorted_score_chromosome_list = ga.run()
 

@@ -1,8 +1,5 @@
 #
 # KF ML LIB
-#     TODO:
-#          - TEST LOADING AND SPLITTING THE EXTENDED DATASET 1.CSV
-#
 #
 
 dataset_path_list = ["../Datasets/CTU-13/Pre-processed/1.csv",
@@ -43,15 +40,26 @@ extended_dataset_path_list = ["../Datasets/CTU-13/Pre-processed_Extended/1.csv",
 import pandas as pd
 import numpy as np
 
+# For feature selection
+from sklearn.ensemble import RandomForestClassifier
+
+# Deep Learning Keras Imports
+from keras import backend as K
+from keras import models
+from keras.layers import Dense, Dropout
+from keras.wrappers.scikit_learn import KerasClassifier
+
+
 
 # Load dataset from file; returns a Pandas DataFrame
 def load_dataset(path):
-    dataset = pd.read_csv(path, index_col=0)
+    dataset = pd.read_csv(path, index_col=0, low_memory=False)
     
     return dataset
 
 
-# Split dataset into Feature Vector and Label Vector DataFrames
+# Split dataset into Feature Vector (X) and Label Vector (y) DataFrames
+# Includes Feature Selection via RFC Classifier for the extended feature datasets
 def split_dataset(dataset, extended):
     # Define feature_vector_columns for normal or extended feature vectors
     if extended:
@@ -62,14 +70,44 @@ def split_dataset(dataset, extended):
     # Defines the label_column_header
     label_vector_column = ['Label']
 
-    # Seperate Dataframe into feature_vectors from label_vector
-    feature_vectors = dataset.loc[:, feature_vector_columns]
-    label_vector = dataset.loc[:, label_vector_column]
-        
-    # Convert label_vector to 1D Array
-    label_vector = np.ravel(label_vector)
 
-    return feature_vectors, label_vector
+    # Seperate Dataframe into feature_vectors (X) and label_vector (y)
+    X = dataset.loc[:, feature_vector_columns]
+    y = dataset.loc[:, label_vector_column]
+    y = np.ravel(y)
+
+    # Feature Selection only applies to extended datasets in this case
+    # Uses RFC to find the feature importances
+    # Returns highest 15 features for the dataset. out of 24
+    if extended:
+        # Perform Feature Selection
+        # Find feature importances via RFC feature importances attribute after fitting to dataset
+        rfc = RandomForestClassifier()
+        rfc = rfc.fit(X, y)
+
+
+        # Associate each feature importance score with it's feature vector column name
+        fi_f = zip(rfc.feature_importances_, feature_vector_columns)
+
+        # Sort feature importances from high to low, maintaining the feature vector column name relationships
+        fi_f = sorted(fi_f, key=lambda x: x[0], reverse=True)
+
+        # Remove lowest 9 features, leaving 15 most important features
+        fi_f = fi_f[:15]
+
+        # Extract the feature selected feature columns
+        selected_dataset_features = []
+
+        for fi, f in fi_f:
+            selected_dataset_features.append(f)
+
+        del rfc, X
+
+        # Return new selected_datset_features DataFrame with the selected features
+        X = dataset.loc[:, selected_dataset_features]
+
+
+    return X, y
 
     
 # Counts normal and botnet flows from the labels within a given dataset
@@ -93,3 +131,43 @@ def calc_f1_score(precision, recall):
     return f1_score
 
 
+# Deep Learning Functions
+#
+#
+# Create FFNN Model, taking in parameters for number of hidden layers and activation functions
+def batch_precision():
+
+    return 0
+
+def batch_recall():
+
+    return 0
+
+def batch_f1_score():
+
+    return 0
+
+def make_sequential_model(hidden_layers, layers_activation, output_activation, loss_function, optimiser_function):
+    model = models.Sequential()
+
+    model.add(Dense(hidden_layers, input_dim=24, activation=layers_activation))
+    model.add(Dense(1, activation=output_activation))
+
+    model.compile(loss=loss_function, optimizer=optimiser_function)
+
+    return model
+
+
+# Returns Keras Classifier for the Keras FFNN Model - For use in GA Bio-Optimisation
+# Takes in parameters for the FFNN and batch and epoch value
+def build_keras_ffnn_classifier(epochs, batch_size, hidden_layers, layers_activation, output_activation, loss_function, optimiser_function):
+    model = KerasClassifier(build_fn=make_sequential_model,
+                                hidden_layers=hidden_layers,
+                                layers_activation=layers_activation,
+                                output_activation=output_activation,
+                                loss_function=loss_function,
+                                optimiser_function=optimiser_function,
+                            epochs=epochs, batch_size=batch_size
+                            )
+
+    return model

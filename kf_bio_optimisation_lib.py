@@ -10,6 +10,8 @@ from sklearn.model_selection import cross_validate
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.ensemble import AdaBoostClassifier
+from sklearn.svm import LinearSVC
 
 
 # Genetic Algorithm Class for hyperparamter optimisation
@@ -56,12 +58,29 @@ class kf_genetic_algorithm:
             self.algorithm = ['ball_tree', 'kd_tree']
             self.leaf_size = dict(low = 1, high = 50)
             self.p = dict(low = 1, high = 5)
+        elif self.classifier == 'AdaBoostClassifier':
+            self.n_estimators = dict(low = 5, high = 100)
+            self.learning_rate = dict(low = 0.1, high = 1.0)
+            self.algorithm = ['SAMME', 'SAMME.R']
+            self.random_state = dict(low = 1, high = 50)
+        elif self.classifier == 'LinearSVC':
+            self.loss = ['hinge', 'squared_hinge']
+            self.tol = dict(low = 1e-5, high = 0.1)
+            self.c = dict(low = 1, high = 5)
+        elif self.classifier == 'FFNN':
+            self.epochs = dict(low = 2, high = 10)
+            self.batch_size = dict(low = 10, high = 1000)
+            self.hidden_layers = dict(low = 10, high = 1000)
+            self.layers_activation = ['softmax', 'selu', 'softplus', 'relu', 'tanh', 'sigmoid', 'linear']
+            self.output_activation = ['softmax', 'selu', 'softplus', 'relu', 'tanh', 'sigmoid', 'linear']
+            self.loss_function = ['mean_squared_error', 'mean_absolute_error', 'squared_hinge', 'categorical_crossentropy', 'binary_crossentropy']
+            self.optimiser_function = ['SGD', 'RMSprop', 'Adagrad', 'Adadelta', 'Adam', 'Adamax', 'Nadam']
         else:
             raise Exception("Classifier not supported: ", self.classifier)
                 
         
         if self.initial_pop_gen_method not in ['heuristic', 'random']:
-            raise Exception("Initial Population Generation Method not supported: ", self.initial_pop_gen_method)
+            raise Exception("Initial Population Generation Method not supported / defined ", self.initial_pop_gen_method)
         #print("Inital population geneneration method = ", self.initial_pop_gen_method)
 
         
@@ -70,6 +89,10 @@ class kf_genetic_algorithm:
         
         
         # Load, process and split dataset
+        # Dataset split includes feature selection, IF the extened datasets are to be used
+        if self.extended_dataset not in [True, False]:
+            raise Exception("Dataset Format not defined", self.extended_dataset)
+
         self.dataset = kf.load_dataset(dataset_path)
         self.X, self.y = kf.split_dataset(self.dataset, extended=self.extended_dataset)
         
@@ -99,7 +122,8 @@ class kf_genetic_algorithm:
         if self.initial_pop_gen_method == 'heuristic':
             start = 1
             chromosome = []
-            
+           
+            # SKLearn Classifiers 
             if self.classifier == 'DecisionTreeClassifier':
                 chromosome.append('gini')
                 chromosome.append('best')
@@ -120,7 +144,26 @@ class kf_genetic_algorithm:
                 chromosome.append('kd_tree')
                 chromosome.append(30)
                 chromosome.append(2)
-        
+            elif self.classifier == 'AdaBoostClassifier':
+                chromosome.append(50)
+                chromosome.append(1.0)
+                chromosome.append('SAMME.R')
+                chromosome.append(None)
+            elif self.classifier == 'LinearSVC':
+                chromosome.append('squared_hinge')
+                chromosome.append(1e-4)
+                chromosome.append(1)
+            # Keras Neural Network Classifier
+            elif self.classifier == 'FFNN':
+                chromosome.append(6)
+                chromosome.append(100)
+                chromosome.append(500)
+                chromosome.append('relu')
+                chromosome.append('sigmoid')
+                chromosome.append('binary_crossentropy')
+                chromosome.append('adam')
+
+
             population.append(chromosome)
         
         
@@ -197,7 +240,7 @@ class kf_genetic_algorithm:
                                              min_weight_fraction_leaf=chromosome[4],
                                              class_weight=chromosome[5])
             elif self.classifier == 'RandomForestClassifier':
-                clf = RandomForestClassifier(n_jobs=8,
+                clf = RandomForestClassifier(n_jobs=1,
                                              n_estimators=chromosome[0],
                                              criterion=chromosome[1],
                                              min_samples_split=chromosome[2],
@@ -205,12 +248,30 @@ class kf_genetic_algorithm:
                                              min_weight_fraction_leaf=chromosome[4],
                                              class_weight=chromosome[5])
             elif self.classifier == 'KNeighborsClassifier':
-                clf = KNeighborsClassifier(n_jobs=8,
+                clf = KNeighborsClassifier(n_jobs=1,
                                            n_neighbors=chromosome[0],
                                            weights=chromosome[1],
                                            algorithm=chromosome[2],
                                            leaf_size=chromosome[3],
                                            p=chromosome[4])
+            elif self.classifier == 'AdaBoostClassifier':
+                clf = AdaBoostClassifier(n_estimators=chromosome[0],
+                                         learning_rate=chromosome[1],
+                                         algorithm=chromosome[2],
+                                         random_state=chromosome[3])
+            elif self.classifier == 'LinearSVC':
+                clf = LinearSVC(loss=chromosome[0],
+                                tol=chromosome[1],
+                                C=chromosome[2])
+            # Keras Deep Learning FFNN Classifier:
+            elif self.classifier == 'FFNN':
+                clf = kf.build_keras_ffnn_classifier(epochs=chromosome[0],
+                                                     batch_size=chromosome[1],
+                                                     hidden_layers=chromosome[2],
+                                                     layers_activation=chromosome[3],
+                                                     output_activation=chromosome[4],
+                                                     loss_function=chromosome[5],
+                                                     optimiser_function=chromosome[6])
 
                 
             # Evaluate fitness, depending on the evaluation method requested
@@ -228,10 +289,11 @@ class kf_genetic_algorithm:
                     f1_score = 0
                 else:
                     f1_score = kf.calc_f1_score(precision, recall)
+
             elif self.evaluation_method == 'cv':
                 scoring = ['precision_macro', 'recall_macro']
                 
-                results = cross_validate(clf, self.X, self.y, cv=10, scoring=scoring, n_jobs=-1, verbose=0)
+                results = cross_validate(clf, self.X, self.y, cv=10, scoring=scoring, n_jobs=10, verbose=0)
 
                 fit_time = np.mean(results['fit_time'])
                 precision = np.mean(results['test_precision_macro'])
@@ -275,13 +337,25 @@ class kf_genetic_algorithm:
         
         
     # Performs one-point-crossover of the parents, returning 
-    def crossover(self, parent1, parent2):       
+    def crossover(self, parent1, parent2):
+        # ML Classifiers       
         if self.classifier == 'DecisionTreeClassifier' or self.classifier == 'RandomForestClassifier':
             offspring1 = [parent1[0], parent1[1], parent1[2], parent2[3], parent2[4], parent2[5]]
             offspring2 = [parent2[0], parent2[1], parent2[2], parent1[3], parent1[4], parent1[5]]
         if self.classifier == 'KNeighborsClassifier':
             offspring1 = [parent1[0], parent1[1], parent1[2], parent2[3], parent2[4]]
             offspring2 = [parent2[0], parent2[1], parent2[2], parent1[3], parent1[4]]
+        if self.classifier == 'AdaBoostClassifier':
+            offspring1 = [parent1[0], parent1[1], parent2[2], parent2[3]]
+            offspring2 = [parent2[0], parent2[1], parent1[2], parent1[3]]
+        if self.classifier == 'LinearSVC':
+            offspring1 = [parent1[0], parent1[1], parent2[2]]
+            offspring2 = [parent2[0], parent2[1], parent1[2]]
+
+        # Keras Deep Learning FFNN
+        if self.classifier == 'FFNN':
+            offspring1 = [parent1[0], parent1[1], parent1[2], parent1[3], parent2[4], parent2[5], parent2[6]]
+            offspring2 = [parent2[0], parent2[1], parent2[2], parent2[3], parent1[4], parent1[5], parent1[6]]
         
         #print("Offspring1 = ", offspring1)
         #print("Offspring2 = ", offspring2)
@@ -313,7 +387,27 @@ class kf_genetic_algorithm:
             chromosome.append(random.choice(self.algorithm))
             chromosome.append(random.randrange(self.leaf_size['low'], self.leaf_size['high']))
             chromosome.append(random.randrange(self.p['low'], self.p['high']))
-            
+        elif self.classifier == 'AdaBoostClassifier':
+            chromosome.append(random.randrange(self.n_estimators['low'], self.n_estimators['high']))
+            chromosome.append(random.uniform(self.learning_rate['low'], self.learning_rate['high']))
+            chromosome.append(random.choice(self.algorithm))
+            chromosome.append(random.randrange(self.random_state['low'], self.random_state['high']))
+        elif self.classifier == 'LinearSVC':
+            chromosome.append(random.choice(self.loss))
+            chromosome.append(random.uniform(self.tol['low'], self.tol['high']))
+            chromosome.append(random.randrange(self.c['low'], self.c['high']))
+
+        # Keras Deep Learning FFNN Classifier
+        elif self.classifier == 'FFNN': 
+            chromosome.append(random.randrange(self.epochs['low'], self.epochs['high'])) 
+            chromosome.append(random.randrange(self.batch_size['low'], self.batch_size['high']))
+            chromosome.append(random.randrange(self.hidden_layers['low'], self.hidden_layers['high']))
+            chromosome.append(random.choice(self.layers_activation))
+            chromosome.append(random.choice(self.output_activation))
+            chromosome.append(random.choice(self.loss_function))
+            chromosome.append(random.choice(self.optimiser_function))
+
+         
         #print("RANDOMLY GENERATED CHROMOSOME:")
         #print(chromosome)
         
@@ -389,6 +483,48 @@ class kf_genetic_algorithm:
                 elif gene == 4:
                     chromosome[4] = random.randrange(self.p['low'], self.p['high'])
 
+            elif self.classifier == 'AdaBoostClassifier':
+                if gene == 0:
+                    chromosome[0] = random.randrange(self.n_estimators['low'], self.n_estimators['high'])
+                elif gene == 1:
+                    chromosome[1] = random.uniform(self.learning_rate['low'], self.learning_rate['high'])
+                elif gene == 2:
+                    if chromosome[2] == 'SAMME':
+                        chromosome[2] = 'SAMME.R'
+                    else:
+                        chromosome[2] = 'SAMME'
+                elif gene == 3:
+                    chromosome[3] = random.randrange(self.random_state['low'], self.random_state['high'])
+
+            elif self.classifier == 'LinearSVC':
+                if gene == 0:
+                    if chromosome[0] == 'hinge':
+                        chromosome[0] = 'squared_hinge'
+                    else:
+                        chromosome[0] = 'hinge'
+                elif gene == 1:
+                    chromosome[1] = random.uniform(self.tol['low'], self.tol['high'])
+                elif gene == 2: 
+                    chromosome[2] = random.randrange(self.c['low'], self.c['high'])
+
+            # Keras Deep Learning FFNN
+            elif self.classifier == 'FFNN':
+                if gene == 0:
+                    chromosome[0] = random.randrange(self.epochs['low'], self.epochs['high'])
+                elif gene == 1:
+                    chromosome[1] = random.randrange(self.batch_size['low'], self.batch_size['high'])
+                elif gene == 2:
+                    chromosome[2] = random.randrange(self.hidden_layers['low'], self.hidden_layers['high'])
+                elif gene == 3:
+                    chromosome[3] = random.choice(self.layers_activation)
+                elif gene == 4:
+                    chromosome[4] = random.choice(self.output_activation)
+                elif gene == 5:
+                    chromosome[5] = random.choice(self.loss_function)
+                elif gene == 6:
+                    chromosome[6] = random.choice(self.optimiser_function)
+
+
     # Plot each generation's best fitness score
     def plot_fitness_scores(self):
         fig = plt.figure()
@@ -397,5 +533,4 @@ class kf_genetic_algorithm:
         # Plots the best fitness score from each generation
         plt.plot(self.best_generation_fitness_scores, c='g')
             
-        plt.show()
-            
+        plt.show()            

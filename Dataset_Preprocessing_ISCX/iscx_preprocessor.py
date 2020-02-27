@@ -40,6 +40,9 @@ class iscx_preprocessor:
             
             # Put data into Pandas DataFrame
             self.dataset = pd.DataFrame(raw_dataset)
+            
+            # EXPERIMENTAL
+            self.dataset['Sport'].astype('int64')
 
         except:
             print("File Read Error")
@@ -49,7 +52,7 @@ class iscx_preprocessor:
     # Function to process isot netflow dataset
     # Modifies any hex values found in the source and destination port fields to decimal
     # Create dataset DataFrame Label descriptions from IP mapping
-    def process_iscx(self):
+    def process_iscx(self, extended):
         print("Started ISCX Dataset Netflow Preprocessor!")
         print("     [1/2] Fixing hex values...")
         print("     [2/3] Filling empty fields...")
@@ -73,8 +76,8 @@ class iscx_preprocessor:
                 self.dataset.at[row, 'Dport'] = dest_port
             
             # Convert all port strings from hex to ints
-            self.dataset.at[row, 'Sport'] = int(str(src_port), 0)
-            self.dataset.at[row, 'Dport'] = int(str(dest_port), 0)
+            self.dataset.at[row, 'Sport'] = str(src_port)
+            self.dataset.at[row, 'Dport'] = str(dest_port)
 
             
             # [2/3]
@@ -99,14 +102,44 @@ class iscx_preprocessor:
             else:
                 self.dataset.at[row, 'Label'] = str("Normal")
             
+            # For extended datasets only
+            # Fix other empty fields
+            if extended:
+                SrcWin = str(self.dataset.at[row, 'SrcWin'])
+                DstWin = str(self.dataset.at[row, 'DstWin'])
+                sHops = str(self.dataset.at[row, 'sHops'])
+                dHops = str(self.dataset.at[row, 'dHops'])
+                sTtl = str(self.dataset.at[row, 'sTtl'])
+                dTtl = str(self.dataset.at[row, 'dTtl'])
+
+                if "nan" in SrcWin:
+                        self.dataset.at[row, 'SrcWin'] = "0"
+
+                if "nan" in DstWin:
+                    self.dataset.at[row, 'DstWin'] = "0"
+
+                if "nan" in sHops:
+                    self.dataset.at[row, 'sHops'] = "0"
+
+                if "nan" in dHops:
+                    self.dataset.at[row, 'dHops'] = "0"
+
+                if "nan" in sTtl:
+                    self.dataset.at[row, 'sTtl'] = "0"
+
+                if "nan" in dTtl:
+                    self.dataset.at[row, 'dTtl'] = "0"
             
         print("Finished preprocessing!!!")
 
         
         
     # Function to write modified dataset to a new file
-    def write_fixed_dataset(self):
-        dataset_dir = "../../Datasets/ISCX Botnet 2014/Pre-processed/ISCX_Training.csv"
+    def write_fixed_dataset(self, extended):
+        if extended:
+            dataset_dir = "../../Datasets/ISCX Botnet 2014/Pre-processed_Extended/ISCX_Training.csv"
+        else:
+            dataset_dir = "../../Datasets/ISCX Botnet 2014/Pre-processed/ISCX_Training.csv"
         
         print("Writing fixed dataset Dataframe to ", dataset_dir)
         

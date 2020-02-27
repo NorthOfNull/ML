@@ -52,7 +52,7 @@ class isot_preprocessor:
     # Function to process isot netflow dataset
     # Modifies any hex values found in the source and destination port fields to decimal
     # Create dataset DataFrame Label descriptions from IP mapping
-    def process_isot(self):
+    def process_isot(self, extended):
         print("Started ISOT Dataset Netflow Preprocessor!")
         print("     [1/3] Fixing hex values...")
         print("     [2/3] Filling empty fields...")
@@ -102,14 +102,44 @@ class isot_preprocessor:
             else:
                 self.dataset.at[row, 'Label'] = str("Normal")
             
+            # For extended datasets only
+            # Fix other empty fields
+            if extended:
+                SrcWin = str(self.dataset.at[row, 'SrcWin'])
+                DstWin = str(self.dataset.at[row, 'DstWin'])
+                sHops = str(self.dataset.at[row, 'sHops'])
+                dHops = str(self.dataset.at[row, 'dHops'])
+                sTtl = str(self.dataset.at[row, 'sTtl'])
+                dTtl = str(self.dataset.at[row, 'dTtl'])
+
+                if "nan" in SrcWin:
+                        self.dataset.at[row, 'SrcWin'] = "0"
+
+                if "nan" in DstWin:
+                    self.dataset.at[row, 'DstWin'] = "0"
+
+                if "nan" in sHops:
+                    self.dataset.at[row, 'sHops'] = "0"
+
+                if "nan" in dHops:
+                    self.dataset.at[row, 'dHops'] = "0"
+
+                if "nan" in sTtl:
+                    self.dataset.at[row, 'sTtl'] = "0"
+
+                if "nan" in dTtl:
+                    self.dataset.at[row, 'dTtl'] = "0"
             
         print("Finished preprocessing!!!")
 
         
         
     # Function to write modified dataset to a new file
-    def write_fixed_dataset(self):
-        dataset_dir = "../../Datasets/ISOT Botnet 2010/Pre-processed/isot_botnet.csv"
+    def write_fixed_dataset(self, extended):
+        if extended:
+            dataset_dir = "../../Datasets/ISOT Botnet 2010/Pre-processed_Extended/isot_botnet.csv"
+        else:
+            dataset_dir = "../../Datasets/ISOT Botnet 2010/Pre-processed/isot_botnet.csv"
         
         print("Writing fixed dataset Dataframe to ", dataset_dir)
         
