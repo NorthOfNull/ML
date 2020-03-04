@@ -94,7 +94,10 @@ class kf_genetic_algorithm:
             raise Exception("Dataset Format not defined", self.extended_dataset)
 
         self.dataset = kf.load_dataset(dataset_path)
-        self.X, self.y = kf.split_dataset(self.dataset, extended=self.extended_dataset)
+        if self.classifier == 'FFNN':
+            self.X, self.y = kf.split_dataset(self.dataset, extended=self.extended_dataset, deep_learning=True)
+        else:
+            self.X, self.y = kf.split_dataset(self.dataset, extended=self.extended_dataset)
         
         if self.evaluation_method == 'single_fit_eval':
             self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(self.X, self.y, train_size=0.7, stratify=self.y)

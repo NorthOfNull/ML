@@ -60,7 +60,7 @@ def load_dataset(path):
 
 # Split dataset into Feature Vector (X) and Label Vector (y) DataFrames
 # Includes Feature Selection via RFC Classifier for the extended feature datasets
-def split_dataset(dataset, extended):
+def split_dataset(dataset, extended, deep_learning=False):
     # Define feature_vector_columns for normal or extended feature vectors
     if extended:
         feature_vector_columns = ['sTos','dTos','SrcWin','DstWin','sHops','dHops','sTtl','dTtl','TcpRtt','SynAck','AckDat','SrcPkts','DstPkts','SrcBytes','DstBytes','SAppBytes','DAppBytes','Dur','TotPkts','TotBytes','TotAppByte','Rate','SrcRate','DstRate']
@@ -79,7 +79,7 @@ def split_dataset(dataset, extended):
     # Feature Selection only applies to extended datasets in this case
     # Uses RFC to find the feature importances
     # Returns highest 15 features for the dataset. out of 24
-    if extended:
+    if extended and deep_learning is False:
         # Perform Feature Selection
         # Find feature importances via RFC feature importances attribute after fitting to dataset
         rfc = RandomForestClassifier()
