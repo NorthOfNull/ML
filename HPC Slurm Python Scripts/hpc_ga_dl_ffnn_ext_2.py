@@ -21,7 +21,7 @@ best_dataset_chromosomes = []
 
 dataset_path = kf.extended_dataset_path_list[rank]
 
-ga = kf_bio.kf_genetic_algorithm(classifier='FFNN', dataset_path=dataset_path,
+ga = kf_bio.kf_genetic_algorithm(classifier='FFNN_2', dataset_path=dataset_path,
                         population_size=15, generations=15, evaluation_method='cv', initial_pop_gen_method='heuristic',
                         extended_dataset=True)
 
