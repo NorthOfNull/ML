@@ -94,9 +94,7 @@ class kf_genetic_algorithm:
         
         if self.initial_pop_gen_method not in ['heuristic', 'random']:
             raise Exception("Initial Population Generation Method not supported / defined ", self.initial_pop_gen_method)
-        #print("Inital population geneneration method = ", self.initial_pop_gen_method)
-
-        
+            
         # Generate inital chromosome population, with size population_size
         self.population = self.generate_inital_population()
         
@@ -108,6 +106,8 @@ class kf_genetic_algorithm:
 
         self.dataset = kf.load_dataset(dataset_path)
 
+        # If Deep Learning is being used (FFNN or FFNN_2 classifiers), then we define the 
+        # dataset splitting to be for deep_learning, whereby feature selection does not take place
         if self.classifier in ['FFNN', 'FFNN_2']:
             self.X, self.y = kf.split_dataset(self.dataset, extended=self.extended_dataset, deep_learning=True)
         else:
@@ -130,8 +130,6 @@ class kf_genetic_algorithm:
         
     # Function to generate an inital random population of chromosomes, given a population_size
     def generate_inital_population(self):
-        #print("Generating Population of size: ", self.population_size)
-        
         # Inital chromosome population
         population = []
         start = 0
@@ -140,7 +138,7 @@ class kf_genetic_algorithm:
         if self.initial_pop_gen_method == 'heuristic':
             start = 1
             chromosome = []
-           
+            
             # SKLearn Classifiers 
             if self.classifier == 'DecisionTreeClassifier':
                 chromosome.append('gini')
@@ -193,10 +191,9 @@ class kf_genetic_algorithm:
                 chromosome.append('sigmoid')
                 chromosome.append('binary_crossentropy')
                 chromosome.append('adam')
-
-
+                
+            # Append the injected chromosome to the population
             population.append(chromosome)
-        
         
         # Fill each chromosome with randomly selected genes from the classifier's gene pools 
         # and add it to the population
@@ -205,17 +202,12 @@ class kf_genetic_algorithm:
             
             population.append(chromosome)
         
-        #print("Generated Inital Population:")
-        #print(population)
-        
         return population
 
     
     # Run the Genetic Algorithm for N generations
     def run(self):        
         for generation in range(0, self.generations):
-            #print("\nGENERATION = ", generation)
-
             # Generate fitness scores for all the chromosomes in the inital population
             fitness_scores = self.evaluate_fitness()   
             
@@ -240,17 +232,8 @@ class kf_genetic_algorithm:
                     
                 self.population.append(chromosome)
             
-            #print("\nOFFSPRING POPULATION:")
-            #for chromosome in self.population:
-            #    print(chromosome)
-            
             # Mutate the population
-            self.mutate_population()
-            
-            #print("\nNew Population:")
-            #for chromosome in self.population:
-            #     print(chromosome)
-        
+            self.mutate_population()     
         
         sorted_best_results = sorted(zip(self.best_generation_fitness_scores, self.best_generation_chromosomes), key=lambda x: x[0], reverse=True)
         
@@ -367,9 +350,6 @@ class kf_genetic_algorithm:
         # Get two fittest chromosomes from the sorted chromosomes
         parent1 = sorted_results[0]
         parent2 = sorted_results[1]
-            
-        #print("score, parent1 = ", parent1)
-        #print("score, parent2 = ", parent2)
         
         self.best_generation_fitness_scores.append(parent1[0])
         self.best_generation_chromosomes.append(parent1[1])
@@ -381,33 +361,20 @@ class kf_genetic_algorithm:
         return parent1, parent2
         
         
-    # Performs one-point-crossover of the parents, returning 
+    # Performs one-point-crossover of the parents, returning the two offspring
     def crossover(self, parent1, parent2):
-        # ML Classifiers       
-        if self.classifier == 'DecisionTreeClassifier' or self.classifier == 'RandomForestClassifier':
-            offspring1 = [parent1[0], parent1[1], parent1[2], parent2[3], parent2[4], parent2[5]]
-            offspring2 = [parent2[0], parent2[1], parent2[2], parent1[3], parent1[4], parent1[5]]
-        if self.classifier == 'KNeighborsClassifier':
-            offspring1 = [parent1[0], parent1[1], parent1[2], parent2[3], parent2[4]]
-            offspring2 = [parent2[0], parent2[1], parent2[2], parent1[3], parent1[4]]
-        if self.classifier == 'AdaBoostClassifier':
-            offspring1 = [parent1[0], parent1[1], parent2[2], parent2[3]]
-            offspring2 = [parent2[0], parent2[1], parent1[2], parent1[3]]
-        if self.classifier == 'LinearSVC':
-            offspring1 = [parent1[0], parent1[1], parent2[2]]
-            offspring2 = [parent2[0], parent2[1], parent1[2]]
+        chromosome_length = len(parent1)
+        offspring1 = []
+        offspring2 = []
 
-        # Keras Deep Learning FFNN
-        if self.classifier == 'FFNN':
-            offspring1 = [parent1[0], parent1[1], parent1[2], parent1[3], parent2[4], parent2[5], parent2[6]]
-            offspring2 = [parent2[0], parent2[1], parent2[2], parent2[3], parent1[4], parent1[5], parent1[6]]
-        if self.classifier == 'FFNN_2':
-            offspring1 = [parent1[0], parent1[1], parent1[2], parent1[3], parent1[4], parent1[5], parent2[6], parent2[7], parent2[8], parent2[9], parent2[10], parent2[11]]
-            offspring2 = [parent2[0], parent2[1], parent2[2], parent2[3], parent2[4], parent2[5], parent1[6], parent1[7], parent1[8], parent1[9], parent1[10], parent1[11]]
-        
-        #print("Offspring1 = ", offspring1)
-        #print("Offspring2 = ", offspring2)
-        
+        for gene in range(chromosome_length):
+            if(gene < (chromosome_length / 2)):
+                offspring1.append(parent1[gene])
+                offspring2.append(parent2[gene])
+            else:
+                offspring1.append(parent2[gene])
+                offspring2.append(parent1[gene])
+
         return offspring1, offspring2
     
     
@@ -467,9 +434,6 @@ class kf_genetic_algorithm:
             chromosome.append(random.choice(self.output_activation))
             chromosome.append(random.choice(self.loss_function))
             chromosome.append(random.choice(self.optimiser_function))
-         
-        #print("RANDOMLY GENERATED CHROMOSOME:")
-        #print(chromosome)
         
         return chromosome
     
@@ -583,6 +547,7 @@ class kf_genetic_algorithm:
                     chromosome[5] = random.choice(self.loss_function)
                 elif gene == 6:
                     chromosome[6] = random.choice(self.optimiser_function)
+                    
             elif self.classifier == 'FFNN_2':
                 if gene == 0:
                     chromosome[0] = random.randrange(self.epochs['low'], self.epochs['high'])
