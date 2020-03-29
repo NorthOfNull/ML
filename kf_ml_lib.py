@@ -147,6 +147,7 @@ def batch_f1_score():
 
     return 0
 
+# FFNN_1
 def make_sequential_model(hidden_layers, layers_activation, output_activation, loss_function, optimiser_function):
     model = models.Sequential()
 
@@ -167,7 +168,44 @@ def build_keras_ffnn_classifier(epochs, batch_size, hidden_layers, layers_activa
                                 output_activation=output_activation,
                                 loss_function=loss_function,
                                 optimiser_function=optimiser_function,
-                            epochs=epochs, batch_size=batch_size
+                            epochs=epochs, batch_size=batch_size,
+                            verbose=0
+                            )
+
+    return model
+
+
+# FFNN_1
+def make_sequential_model_2(hidden_layers, layers_activation, dropout_1, hidden_layers_2, input_dim_2, layers_activation_2, dropout_2, output_activation, loss_function, optimiser_function):
+    model = models.Sequential()
+
+    model.add(Dense(hidden_layers, input_dim=24, activation=layers_activation))
+    model.add(Dropout(dropout_1))
+    model.add(Dense(hidden_layers_2, input_dim=input_dim_2, activation=layers_activation_2))
+    model.add(Dropout(dropout_2))
+    model.add(Dense(1, activation=output_activation))
+
+    model.compile(loss=loss_function, optimizer=optimiser_function)
+
+    return model
+
+
+# Returns Keras Classifier for the Keras FFNN Model - For use in GA Bio-Optimisation
+# Takes in parameters for the FFNN and batch and epoch value
+def build_keras_ffnn_classifier_2(epochs, batch_size, hidden_layers, layers_activation, dropout_1, hidden_layers_2, input_dim_2, layers_activation_2, dropout_2, output_activation, loss_function, optimiser_function):
+    model = KerasClassifier(build_fn=make_sequential_model_2,
+                                hidden_layers=hidden_layers,
+                                layers_activation=layers_activation,
+                                dropout_1=dropout_1,
+                                hidden_layers_2=hidden_layers_2,
+                                input_dim_2=input_dim_2,
+                                layers_activation_2=layers_activation_2,
+                                dropout_2=dropout_2,
+                                output_activation=output_activation,
+                                loss_function=loss_function,
+                                optimiser_function=optimiser_function,
+                            epochs=epochs, batch_size=batch_size,
+                            verbose=0
                             )
 
     return model

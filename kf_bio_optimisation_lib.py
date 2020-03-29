@@ -73,8 +73,21 @@ class kf_genetic_algorithm:
             self.hidden_layers = dict(low = 10, high = 1000)
             self.layers_activation = ['softmax', 'selu', 'softplus', 'relu', 'tanh', 'sigmoid', 'linear']
             self.output_activation = ['softmax', 'selu', 'softplus', 'relu', 'tanh', 'sigmoid', 'linear']
-            self.loss_function = ['mean_squared_error', 'mean_absolute_error', 'squared_hinge', 'categorical_crossentropy', 'binary_crossentropy']
+            self.loss_function = ['mean_squared_error', 'mean_absolute_error', 'squared_hinge', 'binary_crossentropy']
             self.optimiser_function = ['SGD', 'RMSprop', 'Adagrad', 'Adadelta', 'Adam', 'Adamax', 'Nadam']
+        elif self.classifier == 'FFNN_2':
+            self.epochs = dict(low = 2, high = 10)
+            self.batch_size = dict(low = 10, high = 1000)
+            self.hidden_layers = dict(low = 10, high = 1000)
+            self.layers_activation = ['softmax', 'selu', 'softplus', 'relu', 'tanh', 'sigmoid', 'linear']
+            self.dropout_1 = dict(low = 0.1, high = 0.5)
+            self.hidden_layers_2 = dict(low = 10, high = 1000)
+            self.input_dim_2 = dict(low = 2, high = 24)
+            self.layers_activation_2 = ['softmax', 'selu', 'softplus', 'relu', 'tanh', 'sigmoid', 'linear']
+            self.dropout_2 = dict(low = 0.1, high = 0.5)
+            self.output_activation = ['softmax', 'selu', 'softplus', 'relu', 'tanh', 'sigmoid', 'linear']
+            self.loss_function = ['mean_squared_error', 'mean_absolute_error', 'squared_hinge', 'binary_crossentropy']
+            self.optimiser_function = ['SGD', 'RMSprop', 'Adagrad', 'Adadelta', 'Adam', 'Adamax', 'Nadam'] 
         else:
             raise Exception("Classifier not supported: ", self.classifier)
                 
@@ -94,11 +107,13 @@ class kf_genetic_algorithm:
             raise Exception("Dataset Format not defined", self.extended_dataset)
 
         self.dataset = kf.load_dataset(dataset_path)
-        if self.classifier == 'FFNN':
+
+        if self.classifier in ['FFNN', 'FFNN_2']:
             self.X, self.y = kf.split_dataset(self.dataset, extended=self.extended_dataset, deep_learning=True)
         else:
             self.X, self.y = kf.split_dataset(self.dataset, extended=self.extended_dataset)
         
+        # Evaluation method 
         if self.evaluation_method == 'single_fit_eval':
             self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(self.X, self.y, train_size=0.7, stratify=self.y)
             del self.dataset
@@ -162,6 +177,19 @@ class kf_genetic_algorithm:
                 chromosome.append(100)
                 chromosome.append(500)
                 chromosome.append('relu')
+                chromosome.append('sigmoid')
+                chromosome.append('binary_crossentropy')
+                chromosome.append('adam')
+            elif self.classifier == 'FFNN_2':
+                chromosome.append(6)
+                chromosome.append(100)
+                chromosome.append(500)
+                chromosome.append('relu')
+                chromosome.append(0.25)
+                chromosome.append(500)
+                chromosome.append(18)
+                chromosome.append('relu')
+                chromosome.append(0.25)
                 chromosome.append('sigmoid')
                 chromosome.append('binary_crossentropy')
                 chromosome.append('adam')
@@ -275,6 +303,20 @@ class kf_genetic_algorithm:
                                                      output_activation=chromosome[4],
                                                      loss_function=chromosome[5],
                                                      optimiser_function=chromosome[6])
+            elif self.classifier == 'FFNN_2':
+                clf = kf.build_keras_ffnn_classifier_2(epochs=chromosome[0],
+                                                     batch_size=chromosome[1],
+                                                     hidden_layers=chromosome[2],
+                                                     layers_activation=chromosome[3],
+                                                     dropout_1=chromosome[4],
+                                                     hidden_layers_2=chromosome[5],
+                                                     input_dim_2=chromosome[6],
+                                                     layers_activation_2=chromosome[7],
+                                                     dropout_2=chromosome[8],
+                                                     output_activation=chromosome[9],
+                                                     loss_function=chromosome[10],
+                                                     optimiser_function=chromosome[11])
+
 
                 
             # Evaluate fitness, depending on the evaluation method requested
@@ -359,6 +401,9 @@ class kf_genetic_algorithm:
         if self.classifier == 'FFNN':
             offspring1 = [parent1[0], parent1[1], parent1[2], parent1[3], parent2[4], parent2[5], parent2[6]]
             offspring2 = [parent2[0], parent2[1], parent2[2], parent2[3], parent1[4], parent1[5], parent1[6]]
+        if self.classifier == 'FFNN_2':
+            offspring1 = [parent1[0], parent1[1], parent1[2], parent1[3], parent1[4], parent1[5], parent2[6], parent2[7], parent2[8], parent2[9], parent2[10], parent2[11]]
+            offspring2 = [parent2[0], parent2[1], parent2[2], parent2[3], parent2[4], parent2[5], parent1[6], parent1[7], parent1[8], parent1[9], parent1[10], parent1[11]]
         
         #print("Offspring1 = ", offspring1)
         #print("Offspring2 = ", offspring2)
@@ -375,14 +420,14 @@ class kf_genetic_algorithm:
             chromosome.append(random.choice(self.splits))
             chromosome.append(random.randrange(self.min_samples_splits['low'], self.min_samples_splits['high']))
             chromosome.append(random.randrange(self.min_samples_leafs['low'], self.min_samples_leafs['high']))
-            chromosome.append(random.uniform(self.min_weight_fraction_leafs['low'], self.min_weight_fraction_leafs['high']))   
+            chromosome.append(random.uniform(self.min_weight_fraction_leafs['low'], self.min_weight_fraction_leafs['high']))  
             chromosome.append(random.choice(self.class_weights))
         elif self.classifier == 'RandomForestClassifier':
             chromosome.append(random.randrange(self.n_estimators['low'], self.n_estimators['high']))
             chromosome.append(random.choice(self.criterions))
             chromosome.append(random.randrange(self.min_samples_splits['low'], self.min_samples_splits['high']))
             chromosome.append(random.randrange(self.min_samples_leafs['low'], self.min_samples_leafs['high']))
-            chromosome.append(random.uniform(self.min_weight_fraction_leafs['low'], self.min_weight_fraction_leafs['high']))   
+            chromosome.append(random.uniform(self.min_weight_fraction_leafs['low'], self.min_weight_fraction_leafs['high']))  
             chromosome.append(random.choice(self.class_weights))
         elif self.classifier == 'KNeighborsClassifier':
             chromosome.append(random.randrange(self.n_neighbors['low'], self.n_neighbors['high']))
@@ -409,7 +454,19 @@ class kf_genetic_algorithm:
             chromosome.append(random.choice(self.output_activation))
             chromosome.append(random.choice(self.loss_function))
             chromosome.append(random.choice(self.optimiser_function))
-
+        elif self.classifier == 'FFNN_2': 
+            chromosome.append(random.randrange(self.epochs['low'], self.epochs['high'])) 
+            chromosome.append(random.randrange(self.batch_size['low'], self.batch_size['high']))
+            chromosome.append(random.randrange(self.hidden_layers['low'], self.hidden_layers['high']))
+            chromosome.append(random.choice(self.layers_activation))
+            chromosome.append(random.uniform(self.dropout_1['low'], self.dropout_1['high']))
+            chromosome.append(random.randrange(self.hidden_layers_2['low'], self.hidden_layers_2['high']))
+            chromosome.append(random.randrange(self.input_dim_2['low'], self.input_dim_2['high']))
+            chromosome.append(random.choice(self.layers_activation_2))
+            chromosome.append(random.uniform(self.dropout_2['low'], self.dropout_2['high']))
+            chromosome.append(random.choice(self.output_activation))
+            chromosome.append(random.choice(self.loss_function))
+            chromosome.append(random.choice(self.optimiser_function))
          
         #print("RANDOMLY GENERATED CHROMOSOME:")
         #print(chromosome)
@@ -526,6 +583,33 @@ class kf_genetic_algorithm:
                     chromosome[5] = random.choice(self.loss_function)
                 elif gene == 6:
                     chromosome[6] = random.choice(self.optimiser_function)
+            elif self.classifier == 'FFNN_2':
+                if gene == 0:
+                    chromosome[0] = random.randrange(self.epochs['low'], self.epochs['high'])
+                elif gene == 1:
+                    chromosome[1] = random.randrange(self.batch_size['low'], self.batch_size['high'])
+                elif gene == 2:
+                    chromosome[2] = random.randrange(self.hidden_layers['low'], self.hidden_layers['high'])
+                elif gene == 3:
+                    chromosome[3] = random.choice(self.layers_activation)
+                elif gene == 4:
+                    chromosome[4] = random.uniform(self.dropout_1['low'], self.dropout_1['high'])
+                elif gene == 5:
+                    chromosome[5] = random.randrange(self.hidden_layers_2['low'], self.hidden_layers_2['high'])
+                elif gene == 6:
+                    chromosome[6] = random.randrange(self.input_dim_2['low'], self.input_dim_2['high'])
+                elif gene == 7:
+                    chromosome[7] = random.choice(self.layers_activation_2)
+                elif gene == 8:
+                    chromosome[8] = random.uniform(self.dropout_2['low'], self.dropout_2['high'])
+                elif gene == 9:
+                    chromosome[9] = random.choice(self.output_activation)
+                elif gene == 10:
+                    chromosome[10] = random.choice(self.loss_function)
+                elif gene == 11:
+                    chromosome[11] = random.choice(self.optimiser_function)
+
+
 
 
     # Plot each generation's best fitness score
