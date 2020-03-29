@@ -44,7 +44,7 @@ class ctu_preprocessor:
             
 
     # Function to modify dataset DataFrame Label descriptions
-    def fix_labels(self, extended):
+    def fix_labels(self, extended, normal_dataset=False):
         print("Started CTU Dataset Netflow Preprocessor!")
         print("     [1/2] Fixing hex values...")
         print("     [2/3] Filling empty fields...")
@@ -52,50 +52,57 @@ class ctu_preprocessor:
             
         # Iterate over each row
         for row in range(self.dataset.shape[0]):
-            # [1/2]
+            # [1/3]
             # Fix hex values in src and dest port fields
             src_port = str(self.dataset.at[row, 'Sport'])
             dest_port = str(self.dataset.at[row, 'Dport'])
-            
-            # Convert any hex in fields to int      
-            # Empty field 'nan' checks - if empty, converts to "0"
-            if "nan" in src_port:
+
+            #   old   # Convert any hex in fields to int
+            #   old   # Empty field 'nan' checks - if empty, converts to "0"
+            # New - Sets any hex value in port fields to 0
+            # This is due to the port numbers not being used in any supervised learning, but we need to maintain formatting
+            if "0x" in src_port:
                 src_port = "0"
                 self.dataset.at[row, 'Sport'] = src_port
-                
-            if "nan" in dest_port:
+
+            if "0x" in dest_port:
                 dest_port = "0"
                 self.dataset.at[row, 'Dport'] = dest_port
-            
+
             # Convert all strings, even if hex, to ints
-            self.dataset.at[row, 'Sport'] = int(src_port, 0)
-            self.dataset.at[row, 'Dport'] = int(dest_port, 0)
-            
+            #self.dataset.at[row, 'Sport'] = int(src_port)
+            #self.dataset.at[row, 'Dport'] = int(dest_port)
+
             
             # [2/3]
             # Fill empty hex fields, to prevent NaN conflicts
             sTos = str(self.dataset.at[row, 'sTos']) 
             dTos = str(self.dataset.at[row, 'dTos'])
-            
+
             # Empty field 'nan' checks - if empty, converts to "0"
             if "nan" in sTos:
                 self.dataset.at[row, 'sTos'] = "0"
-                
+
             if "nan" in dTos:
                 self.dataset.at[row, 'dTos'] = "0"
             
             
-            # [3/3]
-            # Fix labels
-            label = self.dataset.at[row, 'Label']
-            
-            if "Background" in label:
+            if normal_dataset is False:
+                # [3/3]
+                # Fix labels for previously labelled datasets (Mainly in the case of the labelled CTU-13 datasets)
+                label = self.dataset.at[row, 'Label']
+
+                if "Background" in label:
+                    self.dataset.at[row, 'Label'] = "Normal"
+                elif "Normal" in label:
+                    self.dataset.at[row, 'Label'] = "Normal"
+                elif "Botnet" in label:
+                    self.dataset.at[row, 'Label'] = "Botnet"
+            else:
+                # For known legitimate datasets, the labels are set to 'Normal'
                 self.dataset.at[row, 'Label'] = "Normal"
-            elif "Normal" in label:
-                self.dataset.at[row, 'Label'] = "Normal"
-            elif "Botnet" in label:
-                self.dataset.at[row, 'Label'] = "Botnet"
                 
+            
             # For extended datasets only
             # Fix other empty fields
             if extended:
@@ -166,9 +173,12 @@ class ctu_preprocessor:
         
 
     # Function to write modified dataset to a new file
-    def write_fixed_dataset(self, index, extended):
+    def write_fixed_dataset(self, index, extended, normal_dataset=False):
         if extended:
-            fixed_dataset_dir = "../../Datasets/CTU-13/Pre-processed_Extended/"
+            if normal_dataset is False:
+                fixed_dataset_dir = "../../Datasets/CTU-13/Pre-processed_Extended/"
+            else:
+                fixed_dataset_dir = "../../Datasets/CTU-13/Normal Pcap/Pre-processed/"
         else:   
             fixed_dataset_dir = "../../Datasets/CTU-13/Pre-processed/"
             
