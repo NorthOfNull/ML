@@ -106,7 +106,6 @@ def split_dataset(dataset, extended, deep_learning=False):
         # Return new selected_datset_features DataFrame with the selected features
         X = dataset.loc[:, selected_dataset_features]
 
-
     return X, y
 
     

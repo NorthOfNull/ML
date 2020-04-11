@@ -43,8 +43,8 @@ class ctu_preprocessor:
 
             
 
-    # Function to modify dataset DataFrame Label descriptions
-    def fix_labels(self, extended, normal_dataset=False):
+    # Function to modify dataset DataFrame Label descriptions and process 'NaN' fields
+    def process_ctu13(self, extended, normal_dataset=False):
         print("Started CTU Dataset Netflow Preprocessor!")
         print("     [1/2] Fixing hex values...")
         print("     [2/3] Filling empty fields...")
@@ -57,9 +57,7 @@ class ctu_preprocessor:
             src_port = str(self.dataset.at[row, 'Sport'])
             dest_port = str(self.dataset.at[row, 'Dport'])
 
-            #   old   # Convert any hex in fields to int
-            #   old   # Empty field 'nan' checks - if empty, converts to "0"
-            # New - Sets any hex value in port fields to 0
+            # Sets any hex value in port fields to 0
             # This is due to the port numbers not being used in any supervised learning, but we need to maintain formatting
             if "0x" in src_port:
                 src_port = "0"
@@ -68,17 +66,15 @@ class ctu_preprocessor:
             if "0x" in dest_port:
                 dest_port = "0"
                 self.dataset.at[row, 'Dport'] = dest_port
-
-            # Convert all strings, even if hex, to ints
-            #self.dataset.at[row, 'Sport'] = int(src_port)
-            #self.dataset.at[row, 'Dport'] = int(dest_port)
-
             
             # [2/3]
             # Fill empty hex fields, to prevent NaN conflicts
+            
+            # self.dataset.fillna(0, inplace=True)
+            
             sTos = str(self.dataset.at[row, 'sTos']) 
             dTos = str(self.dataset.at[row, 'dTos'])
-
+            
             # Empty field 'nan' checks - if empty, converts to "0"
             if "nan" in sTos:
                 self.dataset.at[row, 'sTos'] = "0"
@@ -114,20 +110,15 @@ class ctu_preprocessor:
                 dTtl = str(self.dataset.at[row, 'dTtl'])
 
                 if "nan" in SrcWin:
-                        self.dataset.at[row, 'SrcWin'] = "0"
-
+                    self.dataset.at[row, 'SrcWin'] = "0"
                 if "nan" in DstWin:
                     self.dataset.at[row, 'DstWin'] = "0"
-
                 if "nan" in sHops:
                     self.dataset.at[row, 'sHops'] = "0"
-
                 if "nan" in dHops:
                     self.dataset.at[row, 'dHops'] = "0"
-
                 if "nan" in sTtl:
                     self.dataset.at[row, 'sTtl'] = "0"
-
                 if "nan" in dTtl:
                     self.dataset.at[row, 'dTtl'] = "0"
         

@@ -4,7 +4,6 @@
 # Dataset Preprocessing class for ISOT netflows
 #      get_dataset()
 #      process_isot()
-    #      count_flow_types()   <--- TODO
 #      write_fixed_dataset()
 #      show_dataset_head()
 
@@ -13,16 +12,15 @@
 import pandas as pd
 
 # Dataset preprocessor class
-class isot_preprocessor:
-    botnet_ips = ["172.16.0.2",
-                  "172.16.0.11",
-                  "172.16.0.12",
-                  "172.16.2.11",
-                  "172.16.2.12"]
-    
+class isot_preprocessor:   
     def __init__(self, input_path):
         self.path = input_path
         self.dataset = 0
+        
+        self.botnet_mac_addresses = ["aa:aa:aa:aa:aa:aa",
+                                     "bb:bb:bb:bb:bb:bb",
+                                     "cc:cc:cc:cc:cc:cc",
+                                     "cc:cc:cc:dd:dd:dd"]
         
         print("Created isot_preprocessor object")
     
@@ -64,20 +62,16 @@ class isot_preprocessor:
             # Fix hex values in src and dest port fields
             src_port = str(self.dataset.at[row, 'Sport'])
             dest_port = str(self.dataset.at[row, 'Dport'])
-            
-            # Convert any hex in fields to int      
-            # Empty field 'nan' checks - if empty, converts to "0"
-            if "nan" in src_port:
+
+            # Sets any hex value in port fields to 0
+            # This is due to the port numbers not being used in any supervised learning, but we need to maintain formatting
+            if "0x" in src_port:
                 src_port = "0"
                 self.dataset.at[row, 'Sport'] = src_port
-                
-            if "nan" in dest_port:
+
+            if "0x" in dest_port:
                 dest_port = "0"
                 self.dataset.at[row, 'Dport'] = dest_port
-            
-            # Convert all port strings from hex to ints
-            self.dataset.at[row, 'Sport'] = int(str(src_port), 0)
-            self.dataset.at[row, 'Dport'] = int(str(dest_port), 0)
 
             
             # [2/3]
@@ -95,9 +89,9 @@ class isot_preprocessor:
             
             # [3/3]
             # Create labels depending upon source IP Address
-            src_ip = str(self.dataset.at[row, 'SrcAddr'])
+            src_mac = str(self.dataset.at[row, 'SrcMac'])
             
-            if src_ip in self.botnet_ips:
+            if src_mac in self.botnet_mac_addresses:
                 self.dataset.at[row, 'Label'] = str("Botnet")
             else:
                 self.dataset.at[row, 'Label'] = str("Normal")
@@ -113,7 +107,7 @@ class isot_preprocessor:
                 dTtl = str(self.dataset.at[row, 'dTtl'])
 
                 if "nan" in SrcWin:
-                        self.dataset.at[row, 'SrcWin'] = "0"
+                    self.dataset.at[row, 'SrcWin'] = "0"
 
                 if "nan" in DstWin:
                     self.dataset.at[row, 'DstWin'] = "0"
@@ -161,13 +155,10 @@ class isot_preprocessor:
         botnet_flows = 0
         normal_flows = 0
         
-        # Iterate over each row
-        for row in range(self.dataset.shape[0]):
-            src_ip = str(self.dataset.at[row, 'SrcAddr'])
-            
-            if src_ip in self.botnet_ips:
-                botnet_flows += 1
-            else:
+        for row in range(self.dataset.shape[0]):    
+            if self.dataset.at[row, 'Label'] == "Normal":
                 normal_flows += 1
+            if self.dataset.at[row, 'Label'] == "Botnet":
+                botnet_flows += 1
                 
         return botnet_flows, normal_flows
