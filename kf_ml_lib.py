@@ -135,10 +135,10 @@ def calc_f1_score(precision, recall):
 #
 # Create FFNN Model, taking in parameters for number of hidden layers and activation functions
 # FFNN_1
-def make_sequential_model(hidden_layers, layers_activation, output_activation, loss_function, optimiser_function):
+def make_sequential_model(layer_units, layers_activation, output_activation, loss_function, optimiser_function):
     model = models.Sequential()
 
-    model.add(Dense(hidden_layers, input_dim=24, activation=layers_activation))
+    model.add(Dense(layer_units, input_dim=24, activation=layers_activation))
     model.add(Dense(1, activation=output_activation))
 
     model.compile(loss=loss_function, optimizer=optimiser_function)
@@ -148,9 +148,9 @@ def make_sequential_model(hidden_layers, layers_activation, output_activation, l
 
 # Returns Keras Classifier for the Keras FFNN Model - For use in GA Bio-Optimisation
 # Takes in parameters for the FFNN, and batch and epoch value
-def build_keras_ffnn_classifier(epochs, batch_size, hidden_layers, layers_activation, output_activation, loss_function, optimiser_function):
+def build_keras_ffnn_classifier(epochs, batch_size, layer_units, layers_activation, output_activation, loss_function, optimiser_function):
     model = KerasClassifier(build_fn=make_sequential_model,
-                                hidden_layers=hidden_layers,
+                                layer_units=layer_units,
                                 layers_activation=layers_activation,
                                 output_activation=output_activation,
                                 loss_function=loss_function,
@@ -163,12 +163,12 @@ def build_keras_ffnn_classifier(epochs, batch_size, hidden_layers, layers_activa
 
 
 # FFNN_1
-def make_sequential_model_2(hidden_layers, layers_activation, dropout_1, hidden_layers_2, input_dim_2, layers_activation_2, dropout_2, output_activation, loss_function, optimiser_function):
+def make_sequential_model_2(layer_units, layers_activation, dropout_1, layer_units_2, input_dim_2, layers_activation_2, dropout_2, output_activation, loss_function, optimiser_function):
     model = models.Sequential()
 
-    model.add(Dense(hidden_layers, input_dim=24, activation=layers_activation))
+    model.add(Dense(layer_units, input_dim=24, activation=layers_activation))
     model.add(Dropout(dropout_1))
-    model.add(Dense(hidden_layers_2, input_dim=input_dim_2, activation=layers_activation_2))
+    model.add(Dense(layer_units_2, input_dim=input_dim_2, activation=layers_activation_2))
     model.add(Dropout(dropout_2))
     model.add(Dense(1, activation=output_activation))
 
@@ -179,12 +179,12 @@ def make_sequential_model_2(hidden_layers, layers_activation, dropout_1, hidden_
 
 # Returns Keras Classifier for the Keras FFNN_2 Model - For use in GA Bio-Optimisation
 # Takes in parameters for the FFNN_2, and batch and epoch value
-def build_keras_ffnn_classifier_2(epochs, batch_size, hidden_layers, layers_activation, dropout_1, hidden_layers_2, input_dim_2, layers_activation_2, dropout_2, output_activation, loss_function, optimiser_function):
+def build_keras_ffnn_classifier_2(epochs, batch_size, layer_units, layers_activation, dropout_1, layer_units_2, input_dim_2, layers_activation_2, dropout_2, output_activation, loss_function, optimiser_function):
     model = KerasClassifier(build_fn=make_sequential_model_2,
-                                hidden_layers=hidden_layers,
+                                layer_units=layer_units,
                                 layers_activation=layers_activation,
                                 dropout_1=dropout_1,
-                                hidden_layers_2=hidden_layers_2,
+                                layer_units_2=layer_units_2,
                                 input_dim_2=input_dim_2,
                                 layers_activation_2=layers_activation_2,
                                 dropout_2=dropout_2,

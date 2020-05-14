@@ -70,7 +70,7 @@ class kf_genetic_algorithm:
         elif self.classifier == 'FFNN':
             self.epochs = dict(low = 2, high = 10)
             self.batch_size = dict(low = 10, high = 1000)
-            self.hidden_layers = dict(low = 10, high = 1000)
+            self.layer_units = dict(low = 10, high = 1000)
             self.layers_activation = ['softmax', 'selu', 'softplus', 'relu', 'tanh', 'sigmoid', 'linear']
             self.output_activation = ['softmax', 'selu', 'softplus', 'relu', 'tanh', 'sigmoid', 'linear']
             self.loss_function = ['mean_squared_error', 'mean_absolute_error', 'squared_hinge', 'binary_crossentropy']
@@ -78,10 +78,10 @@ class kf_genetic_algorithm:
         elif self.classifier == 'FFNN_2':
             self.epochs = dict(low = 2, high = 10)
             self.batch_size = dict(low = 10, high = 1000)
-            self.hidden_layers = dict(low = 10, high = 1000)
+            self.layer_units = dict(low = 10, high = 1000)
             self.layers_activation = ['softmax', 'selu', 'softplus', 'relu', 'tanh', 'sigmoid', 'linear']
             self.dropout_1 = dict(low = 0.1, high = 0.5)
-            self.hidden_layers_2 = dict(low = 10, high = 1000)
+            self.layer_units_2 = dict(low = 10, high = 1000)
             self.input_dim_2 = dict(low = 2, high = 24)
             self.layers_activation_2 = ['softmax', 'selu', 'softplus', 'relu', 'tanh', 'sigmoid', 'linear']
             self.dropout_2 = dict(low = 0.1, high = 0.5)
@@ -281,7 +281,7 @@ class kf_genetic_algorithm:
             elif self.classifier == 'FFNN':
                 clf = kf.build_keras_ffnn_classifier(epochs=chromosome[0],
                                                      batch_size=chromosome[1],
-                                                     hidden_layers=chromosome[2],
+                                                     layer_units=chromosome[2],
                                                      layers_activation=chromosome[3],
                                                      output_activation=chromosome[4],
                                                      loss_function=chromosome[5],
@@ -289,10 +289,10 @@ class kf_genetic_algorithm:
             elif self.classifier == 'FFNN_2':
                 clf = kf.build_keras_ffnn_classifier_2(epochs=chromosome[0],
                                                      batch_size=chromosome[1],
-                                                     hidden_layers=chromosome[2],
+                                                     layer_units=chromosome[2],
                                                      layers_activation=chromosome[3],
                                                      dropout_1=chromosome[4],
-                                                     hidden_layers_2=chromosome[5],
+                                                     layer_units_2=chromosome[5],
                                                      input_dim_2=chromosome[6],
                                                      layers_activation_2=chromosome[7],
                                                      dropout_2=chromosome[8],
@@ -416,7 +416,7 @@ class kf_genetic_algorithm:
         elif self.classifier == 'FFNN': 
             chromosome.append(random.randrange(self.epochs['low'], self.epochs['high'])) 
             chromosome.append(random.randrange(self.batch_size['low'], self.batch_size['high']))
-            chromosome.append(random.randrange(self.hidden_layers['low'], self.hidden_layers['high']))
+            chromosome.append(random.randrange(self.layer_units['low'], self.layer_units['high']))
             chromosome.append(random.choice(self.layers_activation))
             chromosome.append(random.choice(self.output_activation))
             chromosome.append(random.choice(self.loss_function))
@@ -424,10 +424,10 @@ class kf_genetic_algorithm:
         elif self.classifier == 'FFNN_2': 
             chromosome.append(random.randrange(self.epochs['low'], self.epochs['high'])) 
             chromosome.append(random.randrange(self.batch_size['low'], self.batch_size['high']))
-            chromosome.append(random.randrange(self.hidden_layers['low'], self.hidden_layers['high']))
+            chromosome.append(random.randrange(self.layer_units['low'], self.layer_units['high']))
             chromosome.append(random.choice(self.layers_activation))
             chromosome.append(random.uniform(self.dropout_1['low'], self.dropout_1['high']))
-            chromosome.append(random.randrange(self.hidden_layers_2['low'], self.hidden_layers_2['high']))
+            chromosome.append(random.randrange(self.layer_units_2['low'], self.layer_units_2['high']))
             chromosome.append(random.randrange(self.input_dim_2['low'], self.input_dim_2['high']))
             chromosome.append(random.choice(self.layers_activation_2))
             chromosome.append(random.uniform(self.dropout_2['low'], self.dropout_2['high']))
@@ -538,7 +538,7 @@ class kf_genetic_algorithm:
                 elif gene == 1:
                     chromosome[1] = random.randrange(self.batch_size['low'], self.batch_size['high'])
                 elif gene == 2:
-                    chromosome[2] = random.randrange(self.hidden_layers['low'], self.hidden_layers['high'])
+                    chromosome[2] = random.randrange(self.layer_units['low'], self.layer_units['high'])
                 elif gene == 3:
                     chromosome[3] = random.choice(self.layers_activation)
                 elif gene == 4:
@@ -554,13 +554,13 @@ class kf_genetic_algorithm:
                 elif gene == 1:
                     chromosome[1] = random.randrange(self.batch_size['low'], self.batch_size['high'])
                 elif gene == 2:
-                    chromosome[2] = random.randrange(self.hidden_layers['low'], self.hidden_layers['high'])
+                    chromosome[2] = random.randrange(self.layer_units['low'], self.layer_units['high'])
                 elif gene == 3:
                     chromosome[3] = random.choice(self.layers_activation)
                 elif gene == 4:
                     chromosome[4] = random.uniform(self.dropout_1['low'], self.dropout_1['high'])
                 elif gene == 5:
-                    chromosome[5] = random.randrange(self.hidden_layers_2['low'], self.hidden_layers_2['high'])
+                    chromosome[5] = random.randrange(self.layer_units_2['low'], self.layer_units_2['high'])
                 elif gene == 6:
                     chromosome[6] = random.randrange(self.input_dim_2['low'], self.input_dim_2['high'])
                 elif gene == 7:
