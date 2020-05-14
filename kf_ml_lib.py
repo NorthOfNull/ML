@@ -133,7 +133,7 @@ def calc_f1_score(precision, recall):
 # Deep Learning Functions
 #
 #
-# Create FFNN Model, taking in parameters for number of hidden layers and activation functions
+# Create FFNN Model, taking in parameters for number of hidden layer units and activation functions
 # FFNN_1
 def make_sequential_model(layer_units, layers_activation, output_activation, loss_function, optimiser_function):
     model = models.Sequential()
